@@ -84,21 +84,54 @@ if (failures.length) finish(browserResult, bundleBytes);
 finish(browserResult, bundleBytes);
 
 function validateMetadata() {
-  const viewportTag = html.match(/<meta\s+[^>]*name=["']viewport["'][^>]*>/i)?.[0] ?? '';
-  const viewport = viewportTag.match(/\bcontent=["']([^"']*)["']/i)?.[1] ?? '';
+  const metadata = metaContents(html);
+  const viewport = metadata.get('viewport') ?? '';
   if (!/\bwidth\s*=\s*device-width\b/i.test(viewport)
       || !/\binitial-scale\s*=\s*1(?:\.0+)?\b/i.test(viewport)) {
     fail('Viewport metadata must declare width=device-width and initial-scale=1');
   }
-  const description = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i)?.[1]?.trim();
+  const description = metadata.get('description')?.trim();
   if (!description || /A web app for Meta Ray-Ban Display glasses/i.test(description)) {
     fail('Replace the placeholder meta description with app-specific copy');
   }
-  if (!/<meta\s+name=["']mrbd-web-app-capable["']\s+content=["']yes["']/i.test(html)) {
+  if ((metadata.get('mrbd-web-app-capable') ?? '').toLowerCase() !== 'yes') {
     fail('Missing <meta name="mrbd-web-app-capable" content="yes">');
   }
   const title = html.match(/<title>([^<]+)<\/title>/i)?.[1]?.trim();
   if (!title || title === 'Meta Wearables App') fail('Replace the placeholder document title');
+}
+
+function metaContents(documentHtml) {
+  const metadata = new Map();
+  // Consume whole tags, including quoted '>' characters, so metadata-like text in another
+  // attribute is not mistaken for a meta tag. Comments and raw-text element contents are skipped.
+  const tags = /<!--[\s\S]*?(?:-->|$)|<![^>]*>|<\/?([a-z][a-z0-9:-]*)\b(?:"[^"]*"|'[^']*'|[^'">])*>/gi;
+  let tag;
+  while ((tag = tags.exec(documentHtml))) {
+    if (!tag[1] || tag[0].startsWith('</')) continue;
+    const name = tag[1].toLowerCase();
+    if (['script', 'style', 'textarea', 'title'].includes(name)) {
+      const closing = new RegExp(`</${name}\\s*>`, 'gi');
+      closing.lastIndex = tags.lastIndex;
+      tags.lastIndex = closing.exec(documentHtml) ? closing.lastIndex : documentHtml.length;
+      continue;
+    }
+    if (name !== 'meta') continue;
+    const attributes = new Map();
+    const attributePattern = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+    for (const attribute of tag[0].slice(5, -1).matchAll(attributePattern)) {
+      const attributeName = attribute[1].toLowerCase();
+      // HTML keeps the first occurrence of a duplicate attribute.
+      if (!attributes.has(attributeName)) {
+        attributes.set(attributeName, attribute[2] ?? attribute[3] ?? attribute[4] ?? '');
+      }
+    }
+    const metadataName = attributes.get('name')?.toLowerCase();
+    if (metadataName && !metadata.has(metadataName)) {
+      metadata.set(metadataName, attributes.get('content') ?? '');
+    }
+  }
+  return metadata;
 }
 
 function validateProjectShape() {
