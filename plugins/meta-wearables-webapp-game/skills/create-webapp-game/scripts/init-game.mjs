@@ -51,14 +51,16 @@ const PLUGIN_JSON = path.resolve(HERE, '../../../.claude-plugin/plugin.json');
 
 /** Never copied out of `templates/` — local build/install artifacts, not part of the scaffold. */
 const COPY_EXCLUDE = new Set(['node_modules', 'dist', '.DS_Store']);
+/** Existing agent configuration and VCS state belong to the project, not the template. */
+const PROJECT_STATE_ENTRIES = ['.agents', '.claude', '.codex', '.cursor', '.git'];
 /** Never scanned for placeholders. */
-const SCAN_EXCLUDE = new Set(['node_modules', '.git', 'dist', '_incoming-assets']);
+const SCAN_EXCLUDE = new Set([...PROJECT_STATE_ENTRIES, 'node_modules', 'dist', '_incoming-assets']);
 /**
- * Never set aside into `_incoming-assets/` — agent and VCS state, not user art. Moving `.claude`
- * out from under a running agent revokes its own project permissions mid-scaffold; moving `.git`
+ * Never set aside into `_incoming-assets/` — agent and VCS state, not user art. Moving agent
+ * configuration out from under a running agent can revoke project permissions; moving `.git`
  * detaches the repository. `copyTree` writes none of these names, so leaving them clobbers nothing.
  */
-const STASH_EXCLUDE = new Set(['_incoming-assets', '.claude', '.git', '.DS_Store']);
+const STASH_EXCLUDE = new Set([...PROJECT_STATE_ENTRIES, '_incoming-assets', '.DS_Store']);
 
 const NAME_TOKEN = 'REPLACE_WITH_GAME_NAME';
 const TITLE_TOKEN = 'REPLACE_WITH_GAME_TITLE';
