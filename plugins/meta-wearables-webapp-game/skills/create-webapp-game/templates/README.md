@@ -5,7 +5,7 @@ Three.js.
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js 20.19+ within Node 20, 22.12+ within Node 22, or 24+ (required by Vite and Vitest)
 
 ## Getting started
 

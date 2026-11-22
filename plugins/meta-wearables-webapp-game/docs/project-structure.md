@@ -15,7 +15,7 @@ any HTTPS static host can serve as-is.
 
 | Tool | Role |
 |------|------|
-| **Node.js** (>= 18) | Toolchain runtime only — not shipped to the device |
+| **Node.js** (20.19+ within Node 20, 22.12+ within Node 22, or 24+) | Toolchain runtime only — not shipped to the device |
 | **Vite** | Dev server (HMR) + production bundler |
 | **TypeScript** (strict) | All game code. `tsc --noEmit` is the real type gate |
 | **Three.js** | WebGL rendering for the game world — 2D (orthographic) or 3D (perspective) |
